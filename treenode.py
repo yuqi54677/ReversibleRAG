@@ -236,7 +236,7 @@ class TreeExecutor:
         Recompute the answer and confidence for a single node,
         without redoing the entire tree.
         """
-        print("reanswer node: \n", node.question)
+        #print("reanswer node: \n", node.question)
         if node.kind == NodeKind.LEAF:
             retrieved = self.retriever.rank_sentences(node.question, sentences)
             node.answer = self.llm.answer_subquestions(node.question, retrieved)["answer"]
@@ -266,7 +266,7 @@ class TreeExecutor:
         After fixing 'node', recompute all ancestors' answers and confidence
         up to the root.
         """
-        print("propagate up: \n", node.question)
+        #print("propagate up: \n", node.question)
         cur = node.parent
         while cur is not None:
             if cur.kind == NodeKind.BRANCH:
@@ -378,14 +378,14 @@ def main():
 
     constructor = TreeConstructor(llm)
     tree_root = constructor.build_tree(q)
-    def print_tree(node: ReasoningNode, indent: int = 0):
-        pref = " " * indent
-        print(f"{pref}{node.id} [{node.kind}] Q: {node.question}")
-        if node.answer:
-            print(f"{pref}  A: {node.answer}")
-        for c in node.children:
-            print_tree(c, indent + 2)
-    print_tree(tree_root)
+    # def print_tree(node: ReasoningNode, indent: int = 0):
+    #     pref = " " * indent
+    #     print(f"{pref}{node.id} [{node.kind}] Q: {node.question}")
+    #     if node.answer:
+    #         print(f"{pref}  A: {node.answer}")
+    #     for c in node.children:
+    #         print_tree(c, indent + 2)
+    # print_tree(tree_root)
     
 
     executor = TreeExecutor(retriever, llm)

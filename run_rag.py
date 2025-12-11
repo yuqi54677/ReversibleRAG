@@ -11,22 +11,31 @@ def load_hotpot(num_samples=-1):
     if num_samples != -1:
         dev = dev.select(range(num_samples))
     return dev
-def load_musique():
-    pass
+def load_musique(num_samples=-1):
+    data_files = {
+        "train": "D:/CS598JH/finalproject/data/musique_ans_train.jsonl",
+        "validation": "D:/CS598JH/finalproject/data/musique_ans_dev.jsonl",
+    }
+    ds = load_dataset("json", data_files=data_files)
+    dev = ds["validation"]
+    if num_samples != -1:
+        dev = dev.select(range(2000, 2000+num_samples))
+    # for key in dev.features:
+    #     print(key)
+    return dev
 def load_2wiki():
     pass
 
 def main():
+    dataset = load_musique(2)
 
-    print("Loading HotpotQA (distractor)...")
-    dataset = load_hotpot(10)
 
     print("Loading sentence-transformers model...")
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     llm = LLM()
     stmodel = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    retriever = Retriever(stmodel)
+    retriever = Retriever(stmodel, 'musique')
     classifier =Classifier("musique-hop-classifier")
 
     df = pd.DataFrame(columns=["question", "expected_answer", "answer"])
@@ -38,20 +47,24 @@ def main():
         flat_sentences = retriever.flatten_context_sentences(q)
         pred_class, pred_prob = classifier.predict(question)
         hops = pred_class + 2
+        print("Predicted hops:", hops)
+        print("question:", question)
+        print("expected_answer:", expected_answer)
+        final_answer = ""
         if hops <= 2:
             # run simple strategy
             pass
         else:
             constructor = TreeConstructor(llm)
-            tree_root = constructor.build_tree(q)
-            def print_tree(node: ReasoningNode, indent: int = 0):
-                pref = " " * indent
-                print(f"{pref}{node.id} [{node.kind}] Q: {node.question}")
-                if node.answer:
-                    print(f"{pref}  A: {node.answer}")
-                for c in node.children:
-                    print_tree(c, indent + 2)
-            print_tree(tree_root)
+            tree_root = constructor.build_tree(question)
+            # def print_tree(node: ReasoningNode, indent: int = 0):
+            #     pref = " " * indent
+            #     print(f"{pref}{node.id} [{node.kind}] Q: {node.question}")
+            #     if node.answer:
+            #         print(f"{pref}  A: {node.answer}")
+            #     for c in node.children:
+            #         print_tree(c, indent + 2)
+            # print_tree(tree_root)
             
 
             executor = TreeExecutor(retriever, llm)

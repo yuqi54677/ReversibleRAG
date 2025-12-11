@@ -195,10 +195,17 @@ class LLM:
 
 
 class Retriever():
-    def __init__(self, model):
-        self.model = model
+    def __init__(self, model, dataset_name):
+        self.model = model  
+        self.dataset_name = dataset_name
 
     def flatten_context_sentences(self, example):
+        if self.dataset_name == "hotpotqa":
+            return self.flatten_context_sentences_hotpotqa(example)
+        elif self.dataset_name == "musique":
+            return self.flatten_context_sentences_musique(example)
+        
+    def flatten_context_sentences_hotpotqa(self, example):
         """
         Turn example["context"] into a flat list of sentences with metadata. 
         Each returned item: {title, sent_id, text}.
@@ -214,6 +221,45 @@ class Retriever():
                     "sent_id": i,
                     "text": sent,
                 })
+        return flat
+
+    def flatten_context_sentences(self, example):
+        """
+        Turn example["paragraphs"] into a flat list of sentences with metadata.
+        Each returned item: {title, sent_id, text}.
+        
+        MuSiQue structure:
+        example["paragraphs"] = [
+            {
+                "title": "...",
+                "paragraph_text": "Sentence 1. Sentence 2. ...",
+                "is_supporting": True/False
+            },
+            ...
+        ]
+        """
+        flat = []
+        
+        for paragraph in example["paragraphs"]:
+            title = paragraph["title"]
+            # Split paragraph into sentences (simple split by '. ')
+            # You might want to use a more sophisticated sentence splitter
+            sentences = paragraph["paragraph_text"].split('. ')
+            
+            # Clean up sentences and add period back if needed
+            for i, sent in enumerate(sentences):
+                sent = sent.strip()
+                if sent:  # Skip empty strings
+                    # Add period back if it was removed by split (except for last sentence)
+                    if i < len(sentences) - 1 and not sent.endswith('.'):
+                        sent = sent + '.'
+                    
+                    flat.append({
+                        "title": title,
+                        "sent_id": i,
+                        "text": sent,
+                    })
+        
         return flat
 
 
