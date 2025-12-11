@@ -184,30 +184,31 @@ class TreeExecutor:
 
     # ---- BRANCH_AGGREGATION ----
     def _branch_aggregate(self, node: ReasoningNode) -> str:
-        """
-        Example: combine answers from children and
-        ask LLM to produce the entity that satisfies all of them.
 
-        In the paper's example:
-        A1': 'BBC Radio 1, KEXP'
-        A2': 'BBC Radio 1, NPR'
-        → BRANCH_AGGREGATION → 'BBC Radio 1'
-        """
         child_info = "\n".join(
             f"Sub-question: {c.question}\nAnswer: {c.answer}"
             for c in node.children
         )
 
         prompt = (
-            "You are a reasoning module that aggregates answers from multiple "
-            "sub-questions.\n"
-            "You are given several (sub-question, answer) pairs that are "
-            "all about the SAME underlying entity.\n"
-            "Return a short phrase describing the entity that satisfies ALL "
-            "of the sub-answers, e.g. their intersection.\n\n"
-            f"{child_info}\n\n"
-            "Return ONLY the final entity phrase."
-        )
+    "You are a reasoning module responsible for producing a final answer by "
+    "logically aggregating information from multiple sub-questions.\n"
+    "You are given a set of (sub-question, answer) pairs. These represent the "
+    "intermediate reasoning steps already completed for you. Use them as evidence.\n"
+    "You must:\n"
+    "1. Read all provided sub-questions and their answers carefully.\n"
+    "2. Understand how they collectively relate to the final question.\n"
+    "3. Perform any reasoning or inference needed to connect the evidence.\n"
+    "4. Produce a concise final answer with no extraneous explanation.\n"
+    "5. If evidence is insufficient or contradictory, provide the best possible inference.\n"
+    "Here are the available sub-question/answer pairs:\n"
+    f"{child_info}\n\n"
+    "Now answer the final question using ONLY the information above "
+    "(do not invent unsupported facts):\n"
+    f"{node.question}\n\n"
+    "Return ONLY the final answer string, with no preamble or explanation.\n"
+    "Answer: "
+)
 
         agg_answer = self.llm.chat(prompt)
         node.answered_count += 1
@@ -218,10 +219,6 @@ class TreeExecutor:
 
     # ---- NEST_AGGREGATION ----
     def _nest_aggregate(self, node: ReasoningNode, sentences:List[str]) -> str:
-        """
-        Example: inner child answers 'BBC Radio 1'; we then ask
-        'Who owns BBC Radio 1?' to get 'UK government'.
-        """
         if not node.children:
             raise ValueError("NEST node without children")
 
