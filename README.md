@@ -1,4 +1,4 @@
-# ReversibleRAG (reorganized)
+# ReversibleRAG
 
 ## Overview
 Multi-hop retrieval-augmented generation pipeline with:
